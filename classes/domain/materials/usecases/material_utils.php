@@ -18,8 +18,12 @@ use moodle_exception;
  *  Extraer los datos
  */
 class material_utils
-{   
+{
     const QUERY_FILE_MATERIAL = "SELECT * FROM mdl_files where contextid='%s' ORDER BY sortorder DESC LIMIT 1";
+    const QUERY_URL_DATA = "SELECT *
+        FROM mdl_course_modules mcm
+        INNER JOIN mdl_url mu ON mcm.instance = mu.id
+        WHERE mcm.id = '%s';";
 
     private $validator;
     private $moodle_query_handler;
@@ -57,7 +61,7 @@ class material_utils
             // Sacar el id de la pagina
             $courseid = $event->courseid;
 
-            $queryCourse = ($this->validator->verifyQueryResult([                        
+            $queryCourse = ($this->validator->verifyQueryResult([
                 'data' => $this->moodle_query_handler->extract_data_db([
                     'table' => plugin_config::TABLE_COURSE,
                     'conditions' => [
@@ -66,22 +70,54 @@ class material_utils
                 ])
             ]))['result'];
             $fileData = $this->getDataResource($event->contextid);
-            $sizeFile = $fileData->filesize ?? 0;
-            $typeFile = $fileData->mimetype ?? $getData['other']['modulename'];
-            $url = $this->getUrlResource($event,$fileData);
-            $nameFile = $getData['other']['name'] ?? '';
+
+            $sizeFile = 0;
+            $typeFile = $getData['other']['modulename'];
+
+            switch ($typeFile) {
+                case 'url':
+                    $typeFile = 'link';
+                    break;
+                case 'resource':
+                    $typeFile = 'file';
+                    break;
+            }
+
+            // Optional fields
+            $url = "";
+            $fileName = "";
+            $fileExtension = "";
+
+            if ($typeFile == 'link') {
+                $objectId =  $getData['objectid'];
+                $url = $this->getInstanceId(self::QUERY_URL_DATA, $objectId)->externalurl;
+            }
+
+            if ($typeFile == 'file') {
+                $objectId =  $getData['objectid'];
+                $fileName = $fileData->filename;
+                $sizeFile = $fileData->filesize;
+
+                if (isset($fileData->mimetype)) {
+                    $mimeParts = explode('/', $fileData->mimetype);
+                    $fileExtension = end($mimeParts);
+                }
+            }
+            $moduleName = $getData['other']['name'] ?? '';
 
             $timestamp =  $this->validator->isIsset($getData['timecreated']);
             $formattedDateCreated = date('Y-m-d', $timestamp);
-            
+
             //información a guardar
             $dataToSave = [
                 'id' => $this->validator->isIsset(strval($getData['other']['instanceid'])),
-                'name' => $this->validator->isIsset($nameFile),
+                'name' => $this->validator->isIsset($moduleName),
                 'type' => $this->validator->isIsset($typeFile),
                 'url' => $this->validator->isIsset($url),
+                'fileName' => $fileName,
+                'fileExtension' => $fileExtension,
                 'blackboardSectionId' => $this->validator->isIsset($this->utils_service->convertFormatUplanner($queryCourse->shortname)),
-                'size' => intval($sizeFile), 
+                'size' => intval($sizeFile),
                 'lastUpdatedTime' => $this->validator->isIsset($formattedDateCreated),
                 'action' => strtoupper($data['dispatch']),
                 'transactionId' => $this->validator->isIsset($this->transition_endpoint->getLastRowTransaction($courseid)),
@@ -94,7 +130,7 @@ class material_utils
 
     /**
      * Return the data of the resource
-     * 
+     *
      * @param int $idContext
      * @return object
      */
@@ -114,6 +150,37 @@ class material_utils
                     $fileData = reset($queryResult);
                     if (!empty($fileData)) {
                         $query = $fileData;
+                    }
+                }
+            }
+        } catch (moodle_exception $e) {
+            error_log('Excepción capturada: '. $e->getMessage(). "\n");
+        }
+        return $query;
+    }
+
+    /**
+     * Return the result for the query given an id
+     *
+     * @param int $id
+     * @return object
+     */
+    private function getInstanceId($sql, $id) : object
+    {
+        $query = new \stdClass();
+        try {
+
+            if (isset($id)) {
+                $queryResult = $this->moodle_query_handler->executeQuery(
+                    sprintf(
+                            $sql,
+                            $id
+                ));
+
+                if (!empty($queryResult)) {
+                    $data = reset($queryResult);
+                    if (!empty($data)) {
+                        $query = $data;
                     }
                 }
             }
@@ -145,9 +212,9 @@ class material_utils
                     if ($getData['other']['modulename'] === 'resource') {
                         //sacar la url actual
                         $url = $CFG->wwwroot.'/'.sprintf(
-                            $typeUrl[$getData['other']['modulename']], 
-                            $dataFile->contextid ?? '', 
-                            $dataFile->filearea ?? '', 
+                            $typeUrl[$getData['other']['modulename']],
+                            $dataFile->contextid ?? '',
+                            $dataFile->filearea ?? '',
                             $dataFile->filename ?? ''
                         );
                     }
