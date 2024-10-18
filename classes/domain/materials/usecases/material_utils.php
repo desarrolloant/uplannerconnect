@@ -20,10 +20,6 @@ use moodle_exception;
 class material_utils
 {
     const QUERY_FILE_MATERIAL = "SELECT * FROM mdl_files where contextid='%s' ORDER BY sortorder DESC LIMIT 1";
-    const QUERY_URL_DATA = "SELECT *
-        FROM mdl_course_modules mcm
-        INNER JOIN mdl_url mu ON mcm.instance = mu.id
-        WHERE mcm.id = '%s';";
 
     private $validator;
     private $moodle_query_handler;
@@ -74,26 +70,13 @@ class material_utils
             $sizeFile = 0;
             $typeFile = $getData['other']['modulename'];
 
-            switch ($typeFile) {
-                case 'url':
-                    $typeFile = 'link';
-                    break;
-                case 'resource':
-                    $typeFile = 'file';
-                    break;
-            }
-
             // Optional fields
             $url = "";
             $fileName = "";
             $fileExtension = "";
 
-            if ($typeFile == 'link') {
-                $objectId =  $getData['objectid'];
-                $url = $this->getInstanceId(self::QUERY_URL_DATA, $objectId)->externalurl;
-            }
-
-            if ($typeFile == 'file') {
+            if ($typeFile == 'resource') {
+                $typeFile = 'file';
                 $objectId =  $getData['objectid'];
                 $fileName = $fileData->filename;
                 $sizeFile = $fileData->filesize;
@@ -102,7 +85,11 @@ class material_utils
                     $mimeParts = explode('/', $fileData->mimetype);
                     $fileExtension = end($mimeParts);
                 }
+            } else if (in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
+                $typeFile = 'link';
+                $url = $this->getUrlResource($event, $fileData);
             }
+
             $moduleName = $getData['other']['name'] ?? '';
 
             $timestamp =  $this->validator->isIsset($getData['timecreated']);
@@ -150,37 +137,6 @@ class material_utils
                     $fileData = reset($queryResult);
                     if (!empty($fileData)) {
                         $query = $fileData;
-                    }
-                }
-            }
-        } catch (moodle_exception $e) {
-            error_log('Excepción capturada: '. $e->getMessage(). "\n");
-        }
-        return $query;
-    }
-
-    /**
-     * Return the result for the query given an id
-     *
-     * @param int $id
-     * @return object
-     */
-    private function getInstanceId($sql, $id) : object
-    {
-        $query = new \stdClass();
-        try {
-
-            if (isset($id)) {
-                $queryResult = $this->moodle_query_handler->executeQuery(
-                    sprintf(
-                            $sql,
-                            $id
-                ));
-
-                if (!empty($queryResult)) {
-                    $data = reset($queryResult);
-                    if (!empty($data)) {
-                        $query = $data;
                     }
                 }
             }
