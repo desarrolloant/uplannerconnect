@@ -77,13 +77,18 @@ class material_utils
 
             if ($typeFile == 'resource') {
                 $typeFile = 'file';
-                $objectId =  $getData['objectid'];
-                $fileName = $fileData->filename;
                 $sizeFile = $fileData->filesize;
 
-                if (isset($fileData->mimetype)) {
-                    $mimeParts = explode('/', $fileData->mimetype);
-                    $fileExtension = end($mimeParts);
+                $fileName = $fileData->filename;
+
+                $explodedArray = explode('.', $fileName);
+                $fileExtension = end($explodedArray);
+
+                if (!in_array($fileExtension, ['docx', 'doc', 'ppt', 'pptx', 'xlsx', 'xls'])) {
+                    if (isset($fileData->mimetype)) {
+                        $mimeParts = explode('/', $fileData->mimetype);
+                        $fileExtension = end($mimeParts);
+                    }
                 }
             } else if (in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
                 $typeFile = 'link';
