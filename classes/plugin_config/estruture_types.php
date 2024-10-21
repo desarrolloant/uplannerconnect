@@ -52,6 +52,8 @@ class estruture_types
         ['name' => 'name', 'type' => 'string'],
         ['name' => 'type', 'type' => 'string'],
         ['name' => 'url', 'type' => 'string'],
+        ['name' => 'fileName', 'type' => 'string'],
+        ['name' => 'fileExtension', 'type' => 'string'],
         ['name' => 'parentId', 'type' => 'string'],
         ['name' => 'blackboardSectionId', 'type' => 'string'],
         ['name' => 'size', 'type' => 'numeric'],

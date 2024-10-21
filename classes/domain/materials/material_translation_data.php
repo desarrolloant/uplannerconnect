@@ -69,13 +69,15 @@ class material_translation_data
                 'array_verification' => estruture_types::UPLANNER_MATERIALS_ESTRUTURE,
                 'data' => $data
             ]);
-            
+
             //Estructure of material
             $arraySend = [
             "id" => $dataSend['id'],
             "name" => $dataSend['name'],
             "type" => $dataSend['type'],
             "url"=> $dataSend['url'],
+            "fileName"=> $dataSend['fileName'],
+            "fileExtension"=> $dataSend['fileExtension'],
             "parentId" => $dataSend['parentId'],
             "blackboardSectionId" => $dataSend['blackboardSectionId'],
             "size" => $dataSend['size'],

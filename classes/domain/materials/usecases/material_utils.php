@@ -18,7 +18,7 @@ use moodle_exception;
  *  Extraer los datos
  */
 class material_utils
-{   
+{
     const QUERY_FILE_MATERIAL = "SELECT * FROM mdl_files where contextid='%s' ORDER BY sortorder DESC LIMIT 1";
 
     private $validator;
@@ -57,7 +57,7 @@ class material_utils
             // Sacar el id de la pagina
             $courseid = $event->courseid;
 
-            $queryCourse = ($this->validator->verifyQueryResult([                        
+            $queryCourse = ($this->validator->verifyQueryResult([
                 'data' => $this->moodle_query_handler->extract_data_db([
                     'table' => plugin_config::TABLE_COURSE,
                     'conditions' => [
@@ -66,22 +66,50 @@ class material_utils
                 ])
             ]))['result'];
             $fileData = $this->getDataResource($event->contextid);
-            $sizeFile = $fileData->filesize ?? 0;
-            $typeFile = $fileData->mimetype ?? $getData['other']['modulename'];
-            $url = $this->getUrlResource($event,$fileData);
-            $nameFile = $getData['other']['name'] ?? '';
+
+            $sizeFile = 0;
+            $typeFile = $getData['other']['modulename'];
+
+            // Optional fields
+            $url = "";
+            $fileName = "";
+            $fileExtension = "";
+
+            if ($typeFile == 'resource') {
+                $typeFile = 'file';
+                $sizeFile = $fileData->filesize;
+
+                $fileName = $fileData->filename;
+
+                $explodedArray = explode('.', $fileName);
+                $fileExtension = end($explodedArray);
+
+                if (!in_array($fileExtension, ['docx', 'doc', 'ppt', 'pptx', 'xlsx', 'xls'])) {
+                    if (isset($fileData->mimetype)) {
+                        $mimeParts = explode('/', $fileData->mimetype);
+                        $fileExtension = end($mimeParts);
+                    }
+                }
+            } else if (in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
+                $typeFile = 'link';
+                $url = $this->getUrlResource($event, $fileData);
+            }
+
+            $moduleName = $getData['other']['name'] ?? '';
 
             $timestamp =  $this->validator->isIsset($getData['timecreated']);
             $formattedDateCreated = date('Y-m-d', $timestamp);
-            
+
             //información a guardar
             $dataToSave = [
                 'id' => $this->validator->isIsset(strval($getData['other']['instanceid'])),
-                'name' => $this->validator->isIsset($nameFile),
+                'name' => $this->validator->isIsset($moduleName),
                 'type' => $this->validator->isIsset($typeFile),
                 'url' => $this->validator->isIsset($url),
+                'fileName' => $fileName,
+                'fileExtension' => $fileExtension,
                 'blackboardSectionId' => $this->validator->isIsset($this->utils_service->convertFormatUplanner($queryCourse->shortname)),
-                'size' => intval($sizeFile), 
+                'size' => intval($sizeFile),
                 'lastUpdatedTime' => $this->validator->isIsset($formattedDateCreated),
                 'action' => strtoupper($data['dispatch']),
                 'transactionId' => $this->validator->isIsset($this->transition_endpoint->getLastRowTransaction($courseid)),
@@ -94,7 +122,7 @@ class material_utils
 
     /**
      * Return the data of the resource
-     * 
+     *
      * @param int $idContext
      * @return object
      */
@@ -145,9 +173,9 @@ class material_utils
                     if ($getData['other']['modulename'] === 'resource') {
                         //sacar la url actual
                         $url = $CFG->wwwroot.'/'.sprintf(
-                            $typeUrl[$getData['other']['modulename']], 
-                            $dataFile->contextid ?? '', 
-                            $dataFile->filearea ?? '', 
+                            $typeUrl[$getData['other']['modulename']],
+                            $dataFile->contextid ?? '',
+                            $dataFile->filearea ?? '',
                             $dataFile->filename ?? ''
                         );
                     }
