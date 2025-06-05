@@ -62,7 +62,7 @@ class announcements_utils
             $idForum = $this->validator->isIsset($dataEvent['objectid']);
             $isMessage = $this->isMessageCreated($dataEvent);
             $createdDate = date('Y-m-d', $dateCreated);
-            $createdTime = date('H:i:s', $dateCreated);
+            $createdTime = date('H:i', $dateCreated);
             $dataForum = $this->getDataForum([
                 'forumid' => $idForum,
                 'key' => $isMessage ? 'id' : 'discussion',

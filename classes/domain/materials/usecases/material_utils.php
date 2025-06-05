@@ -90,6 +90,7 @@ class material_utils
                         $fileExtension = end($mimeParts);
                     }
                 }
+                $url = $this->getUrlResource($event, $fileData); # Change to include URL in file
             } else if (in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
                 $typeFile = 'link';
                 $url = $this->getUrlResource($event, $fileData);
