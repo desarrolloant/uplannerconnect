@@ -75,23 +75,7 @@ class material_utils
             $fileName = "";
             $fileExtension = "";
 
-            if ($typeFile == 'resource') {
-                $typeFile = 'file';
-                $sizeFile = $fileData->filesize;
-
-                $fileName = $fileData->filename;
-
-                $explodedArray = explode('.', $fileName);
-                $fileExtension = end($explodedArray);
-
-                if (!in_array($fileExtension, ['docx', 'doc', 'ppt', 'pptx', 'xlsx', 'xls'])) {
-                    if (isset($fileData->mimetype)) {
-                        $mimeParts = explode('/', $fileData->mimetype);
-                        $fileExtension = end($mimeParts);
-                    }
-                }
-                $url = $this->getUrlResource($event, $fileData); # Change to include URL in file
-            } else if (in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
+            if ($typeFile == 'resource' || in_array($typeFile, ['url', 'label', 'lightboxgallery', 'book', 'page', 'imscp'])) {
                 $typeFile = 'link';
                 $url = $this->getUrlResource($event, $fileData);
             }
