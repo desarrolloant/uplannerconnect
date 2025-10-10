@@ -21,3 +21,7 @@ $plugin->authorcontact = 'samuel.ramirez@correounivalle.edu.co & cristian.machad
 
 $plugin->license = 'GNU GPL v3 or later';
 $plugin->description = 'Este plugin se utiliza para enviar información a uPlanner.';
+
+$plugin->dependencies = [
+    'local_iracv' => 2022042701,
+];

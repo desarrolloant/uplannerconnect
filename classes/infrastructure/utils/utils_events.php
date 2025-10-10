@@ -53,10 +53,14 @@ class utils_events
         $response = false;
         try {
             $event_access_validator = new event_access_validator();
+            $academic_period_checker = new academic_period_checker();
             $eventData = $data->get_data();
 
             if (array_key_exists(self::FIELD_COURSE, $eventData)) {
                 $response = $event_access_validator->validateAccessByFaculty($eventData[self::FIELD_COURSE]);
+                if ($response) {
+                    $response = $academic_period_checker->validateAcademicPeriod($eventData[self::FIELD_COURSE]);
+                }
             }
         }
         catch (moodle_exception $e) {
